@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "front-end"
+		},
+		{
+			"path": "broker-service"
+		}
+	],
+	"settings": {}
+}
