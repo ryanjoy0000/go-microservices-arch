@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func (c Config) routes() http.Handler {
+func (c *Config) routes() http.Handler {
 	mux := chi.NewRouter()
 
 	// specify who is allowed to connect
@@ -25,7 +25,7 @@ func (c Config) routes() http.Handler {
 	mux.Use(middleware.Heartbeat("/ping"))
 
 	// configure routes
-	// mux.Post("/", c.BrokerHandler)
+	mux.Post("/auth", c.AuthHandler)
 
 	return mux
 

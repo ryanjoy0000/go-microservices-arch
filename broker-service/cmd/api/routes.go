@@ -8,7 +8,17 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func (c Config) routes() http.Handler {
+type RequestPayload struct {
+	Action string      `json:"action"`
+	Auth   AuthPayload `json:"auth,omitempty"`
+}
+
+type AuthPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (c *Config) routes() http.Handler {
 	mux := chi.NewRouter()
 
 	// specify who is allowed to connect
@@ -26,7 +36,7 @@ func (c Config) routes() http.Handler {
 
 	// configure routes
 	mux.Post("/", c.BrokerHandler)
-
+	mux.Post("/handle", c.HandleSubmission) // listen request on FE, contact auth service, respond back to FE
 	return mux
 
 }

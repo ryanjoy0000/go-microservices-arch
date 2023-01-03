@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 )
 
-type jsonResponse struct {
+type JsonResponse struct {
 	ErrorPresent bool        `json:"errorPresent"`
 	Message      string      `json:"message"`
 	Data         interface{} `json:"data,omitempty"`
@@ -17,25 +18,26 @@ type jsonResponse struct {
 
 // convert received single JSON (inside request body) to data
 func (c *Config) readJSON(w http.ResponseWriter, r *http.Request, data interface{}) error {
-	var err error = nil
 	maxBytes := int64(1024 * 1024) // 1MB
 
 	// Limiting the size of incoming request body
 	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
 
 	// reads received JSON (from req body) & converts to data
-	err = json.NewDecoder(r.Body).Decode(data)
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(data)
 	if err != nil {
+		log.Println("Err while decoding json to data")
 		return err
 	}
 
 	// check if there are more than 1 JSON file
-	err = json.NewDecoder(r.Body).Decode(&struct{}{})
+	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
-		err = errors.New("request body has more than one JSON value")
+		return errors.New("request body has more than one JSON value")
 	}
 
-	return err
+	return nil
 }
 
 // convert data to JSON and send as response
@@ -81,7 +83,7 @@ func (c *Config) errorJSON(w http.ResponseWriter, err error, status ...int) erro
 	}
 
 	// set payload
-	var errPayLoad jsonResponse
+	var errPayLoad JsonResponse
 	errPayLoad.ErrorPresent = true
 	errPayLoad.Message = err.Error()
 
