@@ -26,6 +26,7 @@ func (c *Config) routes() http.Handler {
 
 	// configure routes
 	mux.Post("/log", c.WriteLog)
+	mux.Post("/refreshLogs", c.RefreshLogs)
 
 	return mux
 

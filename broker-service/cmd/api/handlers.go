@@ -40,7 +40,10 @@ func (c *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		c.auth(w, reqPayload.Auth)
 	case "log":
 		// authentication requested
-		c.log(w, reqPayload.Log)
+		c.logEvent(w, reqPayload.Log)
+	case "refreshLogs":
+		// authentication requested
+		c.refreshLogs(w, reqPayload.Log)
 	default:
 		c.errorJSON(w, errors.New("unknown request payload action"))
 	}
@@ -113,9 +116,7 @@ func (c *Config) auth(w http.ResponseWriter, a AuthPayload) {
 	c.writeJSON(w, http.StatusAccepted, pLoad)
 }
 
-func (c *Config) log(w http.ResponseWriter, l LogPayload) {
-	log.Println("Starting log process as requested by FE")
-
+func (c *Config) logEvent(w http.ResponseWriter, l LogPayload) {
 	//-----1. create json byteslice to send to auth service-------
 	bSlice, err := json.MarshalIndent(l, "", "\t")
 	c.handleErr(err)
@@ -148,7 +149,7 @@ func (c *Config) log(w http.ResponseWriter, l LogPayload) {
 
 	if respFromAuth.StatusCode != http.StatusAccepted {
 		log.Println("http.StatusAccepted NOT received from logger service in broker service:", respFromAuth.Status)
-		c.errorJSON(w, errors.New("error calling auth service"))
+		c.errorJSON(w, errors.New("error calling logger service"))
 		return
 	}
 
@@ -177,4 +178,50 @@ func (c *Config) log(w http.ResponseWriter, l LogPayload) {
 	}
 
 	c.writeJSON(w, http.StatusAccepted, pLoad)
+}
+
+func (c *Config) refreshLogs(w http.ResponseWriter, l LogPayload) {
+	//-----1. create json byteslice to send to auth service-------
+	bSlice, err := json.MarshalIndent(l, "", "\t")
+	c.handleErr(err)
+	buffer := bytes.NewBuffer(bSlice) // reader format
+
+	log.Println("Sending to logger service - buffer", buffer)
+
+	// ----2. call service from broker service ----
+	respFromAuth, err := http.Post(
+		"http://logger-service/refreshLogs",
+		"application/json",
+		buffer,
+	)
+	if err != nil {
+		log.Println("err while sending POST request to logger service from broker service")
+		c.errorJSON(w, err)
+		return
+	}
+	defer respFromAuth.Body.Close()
+
+	log.Println("Response received from logger service:",
+		respFromAuth.Status,
+		respFromAuth.Body)
+
+	//------3. make sure to receive correct status code--------
+	if !(respFromAuth.StatusCode == http.StatusAccepted ||
+		respFromAuth.StatusCode == http.StatusOK) {
+		log.Println("correct http status NOT received in broker service:", respFromAuth.Status)
+		c.errorJSON(w, errors.New("error calling logger service"))
+		return
+	}
+
+	// if response code is ok, store response body
+	var jsonFromAuth []LogEntry
+	err = json.NewDecoder(respFromAuth.Body).Decode(&jsonFromAuth)
+	log.Println("respFromAuth", respFromAuth.Body)
+	if err != nil {
+		log.Println("err in logger service, while decoding json - respFromAuth", err)
+		c.errorJSON(w, err)
+		return
+	}
+
+	c.writeJSON(w, http.StatusAccepted, jsonFromAuth)
 }

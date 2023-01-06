@@ -6,12 +6,21 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 type JsonResponse struct {
 	ErrorPresent bool        `json:"errorPresent"`
 	Message      string      `json:"message"`
 	Data         interface{} `json:"data,omitempty"`
+}
+
+type LogEntry struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Data      string    `json:"data"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Common Functions
