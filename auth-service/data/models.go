@@ -12,7 +12,7 @@ import (
 
 const dbTimeout = time.Second * 5
 
-var db *sql.DB
+var dbClient *sql.DB
 
 // Single User
 type User struct {
@@ -34,7 +34,7 @@ type Models struct {
 // Creates an instance of the data package. Returns Model struct which has all types available to the app
 func New(dbPtr *sql.DB) Models {
 	// set the given db handle
-	db = dbPtr
+	dbClient = dbPtr
 
 	// create an instance of model and return
 	u1 := User{}
@@ -64,7 +64,7 @@ func (user *User) GetAll() ([]*User, error) {
 	FROM users
 	ORDER BY last_name
 	`
-	rows, err := db.QueryContext(ctx, q1)
+	rows, err := dbClient.QueryContext(ctx, q1)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (user *User) GetAll() ([]*User, error) {
 func executeUserQuery(ctx context.Context, query string, arg interface{}) (*User, error) {
 	var user User
 
-	row := db.QueryRowContext(ctx, query, arg)
+	row := dbClient.QueryRowContext(ctx, query, arg)
 
 	// Scan copies the matched row into the values pointed
 	err := row.Scan(
@@ -201,7 +201,7 @@ func (u *User) Update() error {
 		where id = $6
 	`
 
-	_, err := db.ExecContext(ctx, stmt,
+	_, err := dbClient.ExecContext(ctx, stmt,
 		u.Email,
 		u.FirstName,
 		u.LastName,
@@ -224,7 +224,7 @@ func (u *User) Delete() error {
 
 	stmt := `delete from users where id = $1`
 
-	_, err := db.ExecContext(ctx, stmt, u.ID)
+	_, err := dbClient.ExecContext(ctx, stmt, u.ID)
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (u *User) DeleteByID(id int) error {
 
 	stmt := `delete from users where id = $1`
 
-	_, err := db.ExecContext(ctx, stmt, id)
+	_, err := dbClient.ExecContext(ctx, stmt, id)
 	if err != nil {
 		return err
 	}
@@ -263,7 +263,7 @@ func (u *User) Insert(user User) (int, error) {
 		values ($1, $2, $3, $4, $5, $6, $7) returning id`
 
 	// Execute query to insert a new row
-	row := db.QueryRowContext(ctx, stmt,
+	row := dbClient.QueryRowContext(ctx, stmt,
 		user.Email,
 		user.FirstName,
 		user.LastName,

@@ -7,12 +7,14 @@ import (
 	"net/http"
 )
 
-func (c *Config) AuthHandler(w http.ResponseWriter, r *http.Request) {
-	// set a json response
-	var ReqPayload struct {
+type JSONPayload struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+
+func (c *Config) AuthHandler(w http.ResponseWriter, r *http.Request) {
+	// set a json response
+	var reqPayload JSONPayload
 
 	log.Println("Received request in auth service",
 		r.Method,
@@ -21,7 +23,7 @@ func (c *Config) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// store json to data
-	err := c.readJSON(w, r, &ReqPayload)
+	err := c.readJSON(w, r, &reqPayload)
 	if err != nil {
 		log.Println("err in auth service, while storing json as data", err)
 		c.errorJSON(w, err, http.StatusBadRequest)
@@ -30,13 +32,13 @@ func (c *Config) AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	// ------ authenticate the user ------
 	// get the user by email from DB
-	user, err := c.Models.User.GetByEmail(ReqPayload.Email)
+	user, err := c.Models.User.GetByEmail(reqPayload.Email)
 	if err != nil {
 		c.errorJSON(w, errors.New("invalid credentials"), http.StatusBadRequest)
 		return
 	}
 	// if user exists in DB, validate the password
-	valid, err := user.PasswordMatches(ReqPayload.Password)
+	valid, err := user.PasswordMatches(reqPayload.Password)
 	if err != nil || !valid {
 		c.errorJSON(w, errors.New("invalid credentials"), http.StatusBadRequest)
 		return
