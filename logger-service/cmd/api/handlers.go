@@ -45,3 +45,28 @@ func (c *Config) WriteLog(w http.ResponseWriter, r *http.Request) {
 
 	c.writeJSON(w, http.StatusAccepted, resp)
 }
+
+func (c *Config) RefreshLogs(w http.ResponseWriter, r *http.Request) {
+
+	var resp []data.LogEntry
+
+	list, err := c.Models.LogEntry.GetAllLogs()
+	if err != nil {
+		log.Println("err while retreiving logs", err)
+		c.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Retrieved logs :")
+	for i := 0; i < len(list); i++ {
+		resp = append(resp, *list[i])
+		log.Println(resp[i].Name, resp[i].Data)
+	}
+	log.Println("----")
+
+	if len(resp) > 0 {
+		c.writeJSON(w, http.StatusOK, resp)
+	} else {
+		c.writeJSON(w, http.StatusOK, "")
+	}
+}
