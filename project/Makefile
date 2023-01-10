@@ -2,6 +2,7 @@ FRONT_END_BINARY=frontApp
 BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
 LOGGER_BINARY=loggerServiceApp
+MAIL_BINARY=mailServiceApp
 
 # ----------------------------
 # up : start all containers in background without forcing build
@@ -10,7 +11,7 @@ up:
 	docker-compose up -d
 
 # up_build: stops docker-compose, builds all projects and starts docker-compose
-up_build: build_broker build_logger build_auth
+up_build: build_broker build_logger build_auth build_mail
 	@echo "Stopping docker containers if any..."
 	docker-compose down
 	@echo "Building & starting all services (except frontend) in background..."
@@ -34,15 +35,22 @@ build_logger:
 	@echo "Building the logger service -> binary..."
 	cd ../logger-service && env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ${LOGGER_BINARY} ./cmd/api
 
+# build_mail: Build the mail service -> binary as a linux executable
+build_mail:
+	@echo "Building the mail service -> binary..."
+	cd ../mail-service && env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ${MAIL_BINARY} ./cmd/api
+
 # build_auth: Build the auth service -> binary as a linux executable
 build_auth:
 	@echo "Building the auth service -> binary..."
 	cd ../auth-service && env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o ${AUTH_BINARY} ./cmd/api
+# ------------------------------
 
 # build_front: Build the front end
 build_front:
 	@echo "Building the front end binary..."
 	cd ../front-end && env CGO_ENABLED=0 go build -o ${FRONT_END_BINARY} ./cmd/web
+
 
 # start_front: Build & Start the front end
 start_front: build_front
